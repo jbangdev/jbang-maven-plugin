@@ -7,22 +7,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
+import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.element;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
+
 /**
  * Run JBang with the specified parameters
+ *
+ * @author <a href="mailto:gegastaldi@gmail.com">George Gastaldi</a>
  */
 @Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
 public class RunMojo extends AbstractMojo {
 
     private static final boolean IS_OS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+
+    private static final int OK_EXIT_CODE = 0;
 
     /**
      * Location of the JBang script to use
@@ -40,23 +55,91 @@ public class RunMojo extends AbstractMojo {
     /**
      * If the script is in a remote location, what URLs should be trusted
      *
-     * {@link https://github.com/jbangdev/jbang#urls-from-trusted-sources} for more information
+     * See https://github.com/jbangdev/jbang#urls-from-trusted-sources for more information
      */
     @Parameter
     private String[] trusts;
 
     /**
-     * JBang Version to use
+     * JBang Version to use. This version is only used to download the JBang binaries if nothing is found in the PATH
      */
-    @Parameter(property = "jbang.version", defaultValue = "latest")
-    private String jbangVersion;
+    @Parameter(property = "jbang.version")
+    private String jbangVersion = getPluginVersion();
+
+    // Used in MojoExecutor. See RunMojo#download
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    protected MavenProject project;
+
+    @Parameter(defaultValue = "${session}")
+    private MavenSession session;
+
+    @Component
+    private BuildPluginManager pluginManager;
+
+    private Path jbangHome;
 
     @Override
     public void execute() throws MojoExecutionException {
-        //TODO: install JBang
+        detectJBang();
         executeTrust();
         executeJBang();
     }
+
+    private void detectJBang() throws MojoExecutionException {
+        ProcessResult result = version();
+        if (result.getExitValue() == OK_EXIT_CODE) {
+            getLog().info("Found JBang v." + result.outputString());
+        } else {
+            getLog().warn("JBang not found. Downloading version " + jbangVersion);
+            download();
+            result = version();
+            if (result.getExitValue() == OK_EXIT_CODE) {
+                getLog().info("Using JBang v." + result.outputString());
+            }
+        }
+    }
+
+    private String getPluginVersion() {
+        return getClass().getPackage().getImplementationVersion();
+    }
+
+    private void download() throws MojoExecutionException {
+        String uri = String.format("https://github.com/jbangdev/jbang/releases/download/v%s/jbang-%s.zip",
+                                   jbangVersion, jbangVersion);
+        executeMojo(
+                plugin("com.googlecode.maven-download-plugin",
+                       "download-maven-plugin",
+                       "1.6.0"),
+                goal("wget"),
+                configuration(
+                        element("uri", uri),
+                        element("unpack", "true"),
+                        element("outputDirectory", "./.jbang")
+                ),
+                executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
+        jbangHome = Paths.get("./.jbang/jbang-" + jbangVersion);
+
+    }
+
+    private ProcessResult version() throws MojoExecutionException {
+        List<String> command = command();
+        command.add(findJBangExecutable() + " version");
+        ProcessResult result = null;
+        try {
+            result = new ProcessExecutor()
+                    .command(command)
+                    .readOutput(true)
+                    .destroyOnExit()
+                    .execute();
+        } catch (Exception e) {
+            throw new MojoExecutionException("Error while fetching the JBang version", e);
+        }
+        return result;
+    }
+
 
     /**
      * Execute "jbang trust add URL..."
@@ -70,7 +153,6 @@ public class RunMojo extends AbstractMojo {
             // No trust required
             return;
         }
-
         List<String> command = command();
         command.add(findJBangExecutable() + " trust add " + String.join(" ", trusts));
         ProcessResult result = execute(command);
@@ -80,6 +162,11 @@ public class RunMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * Execute jbang run script arguments
+     *
+     * @throws MojoExecutionException if exit value != 0
+     */
     private void executeJBang() throws MojoExecutionException {
         List<String> command = command();
         StringBuilder executable = new StringBuilder(findJBangExecutable());
@@ -106,11 +193,9 @@ public class RunMojo extends AbstractMojo {
         }
     }
 
-    private Path findJBangHome() {
-        //TODO: Change it
-        return Paths.get("/home/ggastald/.sdkman/candidates/jbang/0.45.0/");
-    }
-
+    /**
+     * @return the command containing the supported shell per OS
+     */
     private List<String> command() {
         List<String> command = new ArrayList<>();
         if (IS_OS_WINDOWS) {
@@ -124,10 +209,18 @@ public class RunMojo extends AbstractMojo {
     }
 
     private String findJBangExecutable() {
-        if (IS_OS_WINDOWS) {
-            return findJBangHome().resolve("bin/jbang.bat").toString();
+        if (jbangHome != null) {
+            if (IS_OS_WINDOWS) {
+                return jbangHome.resolve("bin/jbang.bat").toString();
+            } else {
+                return jbangHome.resolve("bin/jbang").toString();
+            }
         } else {
-            return findJBangHome().resolve("bin/jbang").toString();
+            if (IS_OS_WINDOWS) {
+                return "jbang.bat";
+            } else {
+                return "jbang";
+            }
         }
     }
 }
