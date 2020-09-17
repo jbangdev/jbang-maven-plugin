@@ -42,13 +42,13 @@ public class RunMojo extends AbstractMojo {
     /**
      * Location of the JBang script to use
      */
-    @Parameter(required = true)
+    @Parameter(property = "script", required = true)
     private String script;
 
     /**
      * The arguments to be used in the JBang script
      */
-    @Parameter
+    @Parameter(property = "jbang.args")
     private String[] args;
 
 
@@ -57,7 +57,7 @@ public class RunMojo extends AbstractMojo {
      *
      * See https://github.com/jbangdev/jbang#urls-from-trusted-sources for more information
      */
-    @Parameter
+    @Parameter(property = "jbang.trusts")
     private String[] trusts;
 
     /**
