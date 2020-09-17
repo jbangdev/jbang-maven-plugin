@@ -84,3 +84,7 @@ The plugin attempts to use any existing JBang installation. If no JBang installa
         </executions>
       </plugin>
 ```
+
+### Reporting bugs/issues/features
+
+Please use https://github.com/jbangdev/jbang for reporting bugs/issues/features. 
