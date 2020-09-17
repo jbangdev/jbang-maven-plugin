@@ -58,19 +58,25 @@ public class RunMojo extends AbstractMojo {
         executeJBang();
     }
 
+    /**
+     * Execute "jbang trust add URL..."
+     *
+     * @throws MojoExecutionException if the exit value is different from
+     *                                0: success
+     *                                1: Already trusted source(s)
+     */
     private void executeTrust() throws MojoExecutionException {
         if (trusts == null || trusts.length == 0) {
             // No trust required
             return;
         }
-        for (String trust : trusts) {
-            List<String> command = command();
-            command.add(findJBangExecutable() + " trust add " + trust);
-            ProcessResult result = execute(command);
-            int exitValue = result.getExitValue();
-            if (exitValue != 0 && exitValue != 1) {
-                throw new MojoExecutionException("Error while trusting JBang URLs. Exit code: " + result.getExitValue());
-            }
+
+        List<String> command = command();
+        command.add(findJBangExecutable() + " trust add " + String.join(" ", trusts));
+        ProcessResult result = execute(command);
+        int exitValue = result.getExitValue();
+        if (exitValue != 0 && exitValue != 1) {
+            throw new MojoExecutionException("Error while trusting JBang URLs. Exit code: " + result.getExitValue());
         }
     }
 
