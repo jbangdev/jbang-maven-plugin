@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -20,6 +21,8 @@ import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
  */
 @Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
 public class RunMojo extends AbstractMojo {
+
+    private static final boolean IS_OS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     /**
      * Location of the JBang script to use
@@ -103,15 +106,22 @@ public class RunMojo extends AbstractMojo {
     }
 
     private List<String> command() {
-        // TODO: Change for other OSes
         List<String> command = new ArrayList<>();
-        command.add("sh");
-        command.add("-c");
+        if (IS_OS_WINDOWS) {
+            command.add("cmd.exe");
+            command.add("/c");
+        } else {
+            command.add("sh");
+            command.add("-c");
+        }
         return command;
     }
 
     private String findJBangExecutable() {
-        // TODO: Change it for other OSes
-        return findJBangHome().resolve("bin/jbang").toString();
+        if (IS_OS_WINDOWS) {
+            return findJBangHome().resolve("bin/jbang.bat").toString();
+        } else {
+            return findJBangHome().resolve("bin/jbang").toString();
+        }
     }
 }
