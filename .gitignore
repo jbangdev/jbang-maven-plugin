@@ -1,0 +1,16 @@
+.classpath
+.project
+.vscode
+.settings
+target
+.idea
+*.iml
+build
+.gradle
+.factorypath
+bin
+homebrew-tap
+RESULTS
+*.db
+jbang-action
+out

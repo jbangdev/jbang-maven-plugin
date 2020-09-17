@@ -1,0 +1,7 @@
+import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+
+Path path = Paths.get(basedir.toString(), "build.log" );
+assert new String(Files.readAllBytes(path)).contains(Locale.getDefault().getLanguage() + "." + Charset.defaultCharset().displayName())
