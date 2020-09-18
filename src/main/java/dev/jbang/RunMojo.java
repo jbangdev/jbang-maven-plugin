@@ -211,13 +211,13 @@ public class RunMojo extends AbstractMojo {
     private String findJBangExecutable() {
         if (jbangHome != null) {
             if (IS_OS_WINDOWS) {
-                return jbangHome.resolve("bin/jbang.bat").toString();
+                return jbangHome.resolve("bin/jbang.cmd").toString();
             } else {
                 return jbangHome.resolve("bin/jbang").toString();
             }
         } else {
             if (IS_OS_WINDOWS) {
-                return "jbang.bat";
+                return "jbang.cmd";
             } else {
                 return "jbang";
             }
