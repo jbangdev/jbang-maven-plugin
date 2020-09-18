@@ -42,7 +42,7 @@ public class RunMojo extends AbstractMojo {
     /**
      * Location of the JBang script to use
      */
-    @Parameter(property = "script", required = true)
+    @Parameter(property = "jbang.script", required = true)
     private String script;
 
     /**
