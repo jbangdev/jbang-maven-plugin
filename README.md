@@ -1,5 +1,8 @@
 ## JBang Maven Plugin 
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jbangdev/jbang-maven-plugin/JBang%20CI?style=for-the-badge)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/jbangdev/jbang-maven-plugin?style=for-the-badge)
+
 The JBang Maven plugin allows JBang scripts to be executed during a Maven build.
 
 The plugin attempts to use any existing JBang installation. If no JBang installation is found, the plugin will install JBang by downloading and caching the latest version binaries (in your local maven repository) for subsequent runs. 
