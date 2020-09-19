@@ -37,21 +37,4 @@ jobs:
       - name: Build with Maven
         run: mvn --no-transfer-progress verify
 
-      - name: Install gpg secret key
-        if: github.ref == 'refs/heads/master'
-        run: |
-          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
-          gpg --list-secret-keys --keyid-format LONG
-
-      - name: Deploy as snapshot
-        if: github.ref == 'refs/heads/master'
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}  
-        run: |
-            mvn \
-              --no-transfer-progress \
-              --batch-mode \
-              -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} \
-              deploy
-
+     
