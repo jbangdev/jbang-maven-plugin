@@ -32,7 +32,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
  *
  * @author <a href="mailto:gegastaldi@gmail.com">George Gastaldi</a>
  */
-@Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
+@Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresProject=false)
 public class RunMojo extends AbstractMojo {
 
     private static final boolean IS_OS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
