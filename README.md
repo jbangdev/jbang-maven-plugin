@@ -5,7 +5,7 @@
 
 The JBang Maven plugin allows JBang scripts to be executed during a Maven build.
 
-The plugin attempts to use any existing JBang installation. If no JBang installation is found, the plugin will install JBang by downloading and caching the latest version binaries (in your local maven repository) for subsequent runs. 
+The plugin attempts to use an existing JBang installation. If no JBang installation is found, the plugin will install JBang by downloading and caching the latest version binaries (in your local maven repository) for subsequent runs. 
 
 ### Arguments
 
