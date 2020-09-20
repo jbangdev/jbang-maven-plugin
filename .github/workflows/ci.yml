@@ -28,14 +28,6 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-      - name: Set up Java/Maven
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-          server0ud: ossrh
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-
       - name: Set up JDK ${{ matrix.java }}
         uses: joschi/setup-jdk@v2
         with:
@@ -49,7 +41,15 @@ jobs:
     needs: build
     runs-on: ubuntu-latest 
     steps:
+    
       - uses: actions/checkout@v2
+      - name: Set up Java/Maven
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
 
       - name: Publish
         if: github.ref == 'refs/heads/master'
