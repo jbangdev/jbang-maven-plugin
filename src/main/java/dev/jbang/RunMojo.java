@@ -3,7 +3,6 @@ package dev.jbang;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -109,6 +108,7 @@ public class RunMojo extends AbstractMojo {
     private void download() throws MojoExecutionException {
         String uri = String.format("https://github.com/jbangdev/jbang/releases/download/v%s/jbang-%s.zip",
                                    jbangVersion, jbangVersion);
+        Path installDir = jbangInstallDir.toPath().resolve(".jbang").toAbsolutePath();
         executeMojo(
                 plugin("com.googlecode.maven-download-plugin",
                        "download-maven-plugin",
@@ -117,13 +117,13 @@ public class RunMojo extends AbstractMojo {
                 configuration(
                         element("uri", uri),
                         element("unpack", "true"),
-                        element("outputDirectory", jbangInstallDir.toPath().resolve(".jbang").toAbsolutePath().toString())
+                        element("outputDirectory", installDir.toString())
                 ),
                 executionEnvironment(
                         project,
                         session,
                         pluginManager));
-        jbangHome = Paths.get("./.jbang/jbang-" + jbangVersion);
+        jbangHome = installDir.resolve("jbang-" + jbangVersion);
 
     }
 
