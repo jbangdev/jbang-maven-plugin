@@ -1,6 +1,7 @@
 package dev.jbang;
 
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
  *
  * @author <a href="mailto:gegastaldi@gmail.com">George Gastaldi</a>
  */
-@Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresProject=false)
+@Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresProject = false)
 public class RunMojo extends AbstractMojo {
 
     private static final boolean IS_OS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
@@ -51,7 +52,6 @@ public class RunMojo extends AbstractMojo {
     @Parameter(property = "jbang.args")
     private String[] args;
 
-
     /**
      * If the script is in a remote location, what URLs should be trusted
      *
@@ -65,6 +65,9 @@ public class RunMojo extends AbstractMojo {
      */
     @Parameter(property = "jbang.version")
     private String jbangVersion = getPluginVersion();
+
+    @Parameter(property = "jbang.install.dir", defaultValue = "${project.basedir}")
+    private File jbangInstallDir;
 
     // Used in MojoExecutor. See RunMojo#download
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
@@ -114,7 +117,7 @@ public class RunMojo extends AbstractMojo {
                 configuration(
                         element("uri", uri),
                         element("unpack", "true"),
-                        element("outputDirectory", "./.jbang")
+                        element("outputDirectory", jbangInstallDir.toPath().resolve(".jbang").toAbsolutePath().toString())
                 ),
                 executionEnvironment(
                         project,
