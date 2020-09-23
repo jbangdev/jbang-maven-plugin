@@ -63,10 +63,16 @@ public class RunMojo extends AbstractMojo {
      * JBang Version to use. This version is only used to download the JBang binaries if nothing is found in the PATH
      */
     @Parameter(property = "jbang.version")
-    private String jbangVersion = getPluginVersion();
+    private String jbangVersion = getJBangVersion();
 
     @Parameter(property = "jbang.install.dir", defaultValue = "${project.basedir}")
     private File jbangInstallDir;
+
+    /**
+     * Skip this execution
+     */
+    @Parameter(property = "jbang.skip")
+    private boolean skip;
 
     // Used in MojoExecutor. See RunMojo#download
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
@@ -82,6 +88,10 @@ public class RunMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+        if (skip) {
+            getLog().info("Skipping plugin execution");
+            return;
+        }
         detectJBang();
         executeTrust();
         executeJBang();
@@ -101,8 +111,9 @@ public class RunMojo extends AbstractMojo {
         }
     }
 
-    private String getPluginVersion() {
-        return getClass().getPackage().getImplementationVersion();
+    private String getJBangVersion() {
+        //TODO: Make it configurable
+        return "0.47.1";
     }
 
     private void download() throws MojoExecutionException {
