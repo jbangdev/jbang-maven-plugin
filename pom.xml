@@ -9,7 +9,7 @@
     </parent>
     <groupId>dev.jbang</groupId>
     <artifactId>jbang-maven-plugin</artifactId>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.5</version>
     <packaging>maven-plugin</packaging>
 
     <name>JBang Maven Plugin</name>
