@@ -113,7 +113,7 @@ public class RunMojo extends AbstractMojo {
 
     private String getJBangVersion() {
         //TODO: Make it configurable
-        return "0.47.1";
+        return "0.68.0";
     }
 
     private void download() throws MojoExecutionException {
