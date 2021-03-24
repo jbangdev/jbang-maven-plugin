@@ -27,7 +27,6 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <jbangVersion>0.45.0</jbangVersion>
                             <script>hello.java</script>
                             <args>
                                 <arg>--option1=foo</arg>
