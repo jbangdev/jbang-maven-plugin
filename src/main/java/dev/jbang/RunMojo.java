@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -62,8 +63,8 @@ public class RunMojo extends AbstractMojo {
     /**
      * JBang Version to use. This version is only used to download the JBang binaries if nothing is found in the PATH
      */
-    @Parameter(property = "jbang.version")
-    private String jbangVersion = getJBangVersion();
+    @Parameter(property = "jbang.version", defaultValue = Artifact.LATEST_VERSION)
+    private String jbangVersion;
 
     @Parameter(property = "jbang.install.dir", defaultValue = "${project.basedir}")
     private File jbangInstallDir;
@@ -100,9 +101,10 @@ public class RunMojo extends AbstractMojo {
     private void detectJBang() throws MojoExecutionException {
         ProcessResult result = version();
         if (result.getExitValue() == OK_EXIT_CODE) {
-            getLog().info("Found JBang v." + result.outputString());
+            getLog().info("Found JBang v." + result.outputString() + " in " + findJBangExecutable());
         } else {
-            getLog().warn("JBang not found. Downloading version " + jbangVersion);
+            getLog().warn("JBang not found. Downloading " + (isLatestVersion() ? "the latest version" :
+                    "version " + jbangVersion));
             download();
             result = version();
             if (result.getExitValue() == OK_EXIT_CODE) {
@@ -111,22 +113,27 @@ public class RunMojo extends AbstractMojo {
         }
     }
 
-    private String getJBangVersion() {
-        //TODO: Make it configurable
-        return "0.68.0";
-    }
-
     private void download() throws MojoExecutionException {
-        String uri = String.format("https://github.com/jbangdev/jbang/releases/download/v%s/jbang-%s.zip",
-                                   jbangVersion, jbangVersion);
+        String uri;
+        String homePath;
+        if (isLatestVersion()) {
+            uri = "https://www.jbang.dev/releases/latest/download/jbang.zip";
+            homePath = "jbang";
+        } else {
+            uri = String.format("https://github.com/jbangdev/jbang/releases/download/v%s/jbang-%s.zip",
+                                jbangVersion, jbangVersion);
+            homePath = "jbang-" + jbangVersion;
+        }
         Path installDir = jbangInstallDir.toPath().resolve(".jbang").toAbsolutePath();
+        getLog().debug("Downloading JBang from " + uri + " and installing in " + installDir);
         executeMojo(
                 plugin("com.googlecode.maven-download-plugin",
                        "download-maven-plugin",
-                       "1.6.0"),
+                       "1.6.2"),
                 goal("wget"),
                 configuration(
                         element("uri", uri),
+                        element("followRedirects", "true"),
                         element("unpack", "true"),
                         element("outputDirectory", installDir.toString())
                 ),
@@ -134,8 +141,11 @@ public class RunMojo extends AbstractMojo {
                         project,
                         session,
                         pluginManager));
-        jbangHome = installDir.resolve("jbang-" + jbangVersion);
+        jbangHome = installDir.resolve(homePath);
+    }
 
+    private boolean isLatestVersion() {
+        return Artifact.LATEST_VERSION.equals(jbangVersion);
     }
 
     private ProcessResult version() throws MojoExecutionException {

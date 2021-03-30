@@ -27,7 +27,6 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <jbangVersion>0.45.0</jbangVersion>
                             <script>https://github.com/jbangdev/jbang-examples/blob/master/examples/lang.java</script>
                             <trusts>
                                 <trust>https://github.com</trust>
