@@ -41,6 +41,12 @@ public class RunMojo extends AbstractMojo {
     private static final int OK_EXIT_CODE = 0;
 
     /**
+     * The arguments to be used for JBang itself
+     */
+    @Parameter(property = "jbang.jbangargs")
+    private String[] jbangargs;
+
+    /**
      * Location of the JBang script to use
      */
     @Parameter(property = "jbang.script", required = true)
@@ -194,7 +200,11 @@ public class RunMojo extends AbstractMojo {
     private void executeJBang() throws MojoExecutionException {
         List<String> command = command();
         StringBuilder executable = new StringBuilder(findJBangExecutable());
-        executable.append(" run ").append(script);
+        executable.append(" run ");
+        if (jbangargs != null) {
+            executable.append(" ").append(String.join(" ", jbangargs)).append(" ");
+        }
+        executable.append(script);
         if (args != null) {
             executable.append(" ").append(String.join(" ", args));
         }
