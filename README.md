@@ -88,6 +88,33 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       </plugin>
 ```
 
+- `jbangargs`: Arguments for `jbang` (not the script)
+
+#### Example
+
+```xml
+      <plugin>
+        <groupId>dev.jbang</groupId>
+        <artifactId>jbang-maven-plugin</artifactId>
+        <version>0.0.4</version>
+        <executions>
+          <execution>
+            <id>run</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+                <jbangargs>
+                     <jbangarg>--quiet</jbangarg>
+                </jbangargs>
+                <script>hello.java</script>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+```
+                            
 - `jbangVersion`: If your envronment lacks the JBang binaries in the PATH, you can specify the JBang version to be installed. The default value will be the plugin's version
 
 
