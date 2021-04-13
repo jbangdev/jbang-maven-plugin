@@ -17,7 +17,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       <plugin>
         <groupId>dev.jbang</groupId>
         <artifactId>jbang-maven-plugin</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.7</version>
         <executions>
           <execution>
             <id>run</id>
@@ -41,7 +41,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       <plugin>
         <groupId>dev.jbang</groupId>
         <artifactId>jbang-maven-plugin</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.7</version>
         <executions>
           <execution>
             <id>run</id>
@@ -69,7 +69,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       <plugin>
         <groupId>dev.jbang</groupId>
         <artifactId>jbang-maven-plugin</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.7</version>
         <executions>
           <execution>
             <id>run</id>
@@ -96,7 +96,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       <plugin>
         <groupId>dev.jbang</groupId>
         <artifactId>jbang-maven-plugin</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.7</version>
         <executions>
           <execution>
             <id>run</id>
@@ -124,7 +124,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       <plugin>
         <groupId>dev.jbang</groupId>
         <artifactId>jbang-maven-plugin</artifactId>
-        <version>0.0.4</version>
+        <version>0.0.7</version>
         <executions>
           <execution>
             <id>run</id>
