@@ -107,14 +107,14 @@ public class RunMojo extends AbstractMojo {
     private void detectJBang() throws MojoExecutionException {
         ProcessResult result = version();
         if (result.getExitValue() == OK_EXIT_CODE) {
-            getLog().info("Found JBang v." + result.outputString() + " in " + findJBangExecutable());
+            getLog().info("Found JBang v." + result.outputString().trim());
         } else {
             getLog().warn("JBang not found. Downloading " + (isLatestVersion() ? "the latest version" :
                     "version " + jbangVersion));
             download();
             result = version();
             if (result.getExitValue() == OK_EXIT_CODE) {
-                getLog().info("Using JBang v." + result.outputString());
+                getLog().info("Using JBang v." + result.outputString().trim());
             }
         }
     }
