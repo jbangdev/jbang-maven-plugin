@@ -115,7 +115,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
       </plugin>
 ```
                             
-- `jbangVersion`: If your envronment lacks the JBang binaries in the PATH, you can specify the JBang version to be installed. The default value will be the plugin's version
+- `jbangVersion`: If your envronment lacks the JBang binaries in the PATH, you can specify the JBang version to be installed. If not specified, the plugin will resolve to the latest JBang release available
 
 
 #### Example 
