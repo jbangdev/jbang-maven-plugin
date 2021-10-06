@@ -72,6 +72,9 @@ public class RunMojo extends AbstractMojo {
     @Parameter(property = "jbang.version", defaultValue = Artifact.LATEST_VERSION)
     private String jbangVersion;
 
+    /**
+     * JBang installation directory. Default location is ${project.basedir}
+     */
     @Parameter(property = "jbang.install.dir", defaultValue = "${project.basedir}")
     private File jbangInstallDir;
 

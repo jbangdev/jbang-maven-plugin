@@ -5,7 +5,7 @@
 
 The JBang Maven plugin allows JBang scripts to be executed during a Maven build.
 
-The plugin attempts to use an existing JBang installation. If no JBang installation is found, the plugin will install JBang by downloading and caching the latest version binaries (in your local maven repository) for subsequent runs. 
+The plugin attempts to use an existing JBang installation. If no JBang installation is found, the plugin will install JBang by downloading and caching the latest version binaries (by default in your Maven project directory) for subsequent runs. 
 
 ### Arguments
 
@@ -135,6 +135,32 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
             <configuration>
                 <script>hello.java</script>
                 <jbangVersion>0.47.1</jbangVersion>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+```
+
+- `jbangInstallDir`: Alternative location of JBang installation. The default value is `${project.basedir}`
+
+
+#### Example
+
+```xml
+      <plugin>
+        <groupId>dev.jbang</groupId>
+        <artifactId>jbang-maven-plugin</artifactId>
+        <version>0.0.7</version>
+        <executions>
+          <execution>
+            <id>run</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+                <script>hello.java</script>
+                <jbangInstallDir>${project.build.directory}</jbangInstallDir>
             </configuration>
           </execution>
         </executions>
