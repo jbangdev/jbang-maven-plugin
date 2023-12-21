@@ -1,6 +1,6 @@
 ## JBang Maven Plugin 
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jbangdev/jbang-maven-plugin/JBang%20CI?style=for-the-badge)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jbangdev/jbang-maven-plugin/ci.yml?style=for-the-badge)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.jbang/jbang-maven-plugin.svg?label=Maven-Central&style=for-the-badge)](https://search.maven.org/search?q=g:%22dev.jbang%22%20AND%20a:%22jbang-maven-plugin%22)
 
 The JBang Maven plugin allows JBang scripts to be executed during a Maven build.
