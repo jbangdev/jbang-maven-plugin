@@ -170,3 +170,24 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
 ### Reporting bugs/issues/features
 
 Please use https://github.com/jbangdev/jbang for reporting bugs/issues/features. 
+
+### Releasing
+
+To release a new version of the plugin, run the following command:
+
+```shell
+mvn versions:set -DnewVersion=0.0.Z
+git commit -a -m "release 0.0.Z"
+git tag -a 0.0.Z -m "release 0.0.Z"
+git push
+```
+
+When completed correctly, the new version will be available in Maven Central within some time (usually less than 30 minutes).
+
+To prepare for the next development iteration, run the following command:
+
+```shell```
+mvn versions:set -DnewVersion=0.0.Z+1-SNAPSHOT
+git commit -a -m "prepare for next development iteration"
+git push
+```
