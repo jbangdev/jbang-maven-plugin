@@ -53,7 +53,7 @@ jobs:
 
       - name: Publish
         if: github.ref == 'refs/heads/main'
-        run: ./mvnw -B deploy
+        run: ./mvnw -B -Pgpg-sign deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
