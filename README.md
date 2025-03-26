@@ -3,7 +3,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jbangdev/jbang-maven-plugin/ci.yml?style=for-the-badge)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.jbang/jbang-maven-plugin.svg?label=Maven-Central&style=for-the-badge)](https://search.maven.org/search?q=g:%22dev.jbang%22%20AND%20a:%22jbang-maven-plugin%22)
 
-The JBang Maven plugin allows JBang scripts to be executed during a Maven build.
+The JBang Maven plugin allows JBang scripts to be executed during a Maven build, or through `mvn` command-line (without pom file).
 
 The plugin attempts to use an existing JBang installation. If no JBang installation is found, the plugin will install JBang by downloading and caching the latest version binaries (by default in your Maven project directory) for subsequent runs. 
 
@@ -13,6 +13,7 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
 
 #### Example 
 
+From inside a Maven buid:
 ```xml
       <plugin>
         <groupId>dev.jbang</groupId>
@@ -32,6 +33,8 @@ The plugin attempts to use an existing JBang installation. If no JBang installat
         </executions>
       </plugin>
 ```
+
+Or with command-line `$ mvn dev.jbang:jbang-maven-plugin:0.0.8:run -Djbang.script="helloworld/helloworld.java"`.
     
 - `args` : The arguments to be used in the JBang script (if any)
 
