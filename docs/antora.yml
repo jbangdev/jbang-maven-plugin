@@ -1,0 +1,9 @@
+name: jbang-maven-plugin
+title: JBang Maven Plugin
+version: latest
+nav:
+  - modules/ROOT/nav.adoc
+ext: 
+  collector:
+    run: ./docs/update-index.sh
+        
