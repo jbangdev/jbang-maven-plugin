@@ -1,0 +1,13 @@
+name: jbang-maven-plugin
+title: JBang Maven Plugin
+version: latest
+nav:
+  - modules/ROOT/nav.adoc
+ext: 
+  collector:
+  - run: jbang docs/readme2index.java
+  - scan: 
+      dir: build/content/pages
+      files: index.adoc
+      into: modules/ROOT/pages
+       
