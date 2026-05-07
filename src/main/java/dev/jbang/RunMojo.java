@@ -1,32 +1,32 @@
 package dev.jbang;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import eu.maveniverse.maven.toolrunner.shared.Config;
+import eu.maveniverse.maven.toolrunner.shared.ToolHandle;
+import eu.maveniverse.maven.toolrunner.shared.ToolHandler;
+import eu.maveniverse.maven.toolrunner.shared.ToolManager;
+import eu.maveniverse.maven.toolrunner.tools.jbang.JBangProvider;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
-import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
-
-import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.element;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 
 /**
  * Run JBang with the specified parameters
@@ -35,11 +35,6 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
  */
 @Mojo(name = "run", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresProject = false)
 public class RunMojo extends AbstractMojo {
-
-    private static final boolean IS_OS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
-
-    private static final int OK_EXIT_CODE = 0;
-
     /**
      * The arguments to be used for JBang itself
      */
@@ -84,17 +79,11 @@ public class RunMojo extends AbstractMojo {
     @Parameter(property = "jbang.skip")
     private boolean skip;
 
-    // Used in MojoExecutor. See RunMojo#download
+    /**
+     * Used for basedir -> CWD
+     */
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
-
-    @Parameter(defaultValue = "${session}")
-    private MavenSession session;
-
-    @Component
-    private BuildPluginManager pluginManager;
-
-    private Path jbangHome;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -102,77 +91,56 @@ public class RunMojo extends AbstractMojo {
             getLog().info("Skipping plugin execution");
             return;
         }
-        detectJBang();
-        executeTrust();
-        executeJBang();
-    }
-
-    private void detectJBang() throws MojoExecutionException {
-        ProcessResult result = version();
-        if (result.getExitValue() == OK_EXIT_CODE) {
-            getLog().info("Found JBang v." + result.outputString().trim());
-        } else {
-            getLog().warn("JBang not found. Downloading " + (isLatestVersion() ? "the latest version" :
-                    "version " + jbangVersion));
-            download();
-            result = version();
-            if (result.getExitValue() == OK_EXIT_CODE) {
-                getLog().info("Using JBang v." + result.outputString().trim());
+        try (ToolManager toolManager = ToolManager.create(
+                Config.builder()
+                        .isTransient(false)
+                        .allowPathDetection(true)
+                        .tempDirectory(Paths.get(project.getBuild().getOutputDirectory()).resolve("toolrunner-tmp"))
+                        .installationDirectory(jbangInstallDir.toPath())
+                        .build())) {
+            ToolHandler toolHandler = toolManager.selectToolByName("jbang")
+                    .orElseThrow(() -> new IllegalStateException("ToolHandler not found")); // never happens
+            ToolHandle jbang;
+            if (jbangVersion != null && !Artifact.LATEST_VERSION.equals(jbangVersion)) {
+                // parameterize version; user wants exactly specified version
+                HashMap<String, String> jbangMd = new HashMap<>();
+                jbangMd.put(ToolHandler.TOOL_NAME, JBangProvider.NAME);
+                jbangMd.put(ToolHandler.TOOL_VERSION, jbangVersion);
+                jbang = toolHandler.selectTool(jbangMd).orElseThrow(() -> new IllegalStateException("JBang not found"));
+            } else {
+                // use whatever (ie $PATH) or provision LATEST
+                jbang = toolHandler.toolHandle();
             }
+            executeTrust(jbang);
+
+            // execute it
+            List<String> arguments = new ArrayList<>();
+            arguments.add("run");
+            if (jbangargs != null) {
+                arguments.addAll(Arrays.asList(jbangargs));
+            }
+            arguments.add(script);
+            if (args != null) {
+                arguments.addAll(Arrays.asList(args));
+            }
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
+            ToolHandle.Result result = jbang.execute(jbang.executionTemplate()
+                    .cwd(project.getBasedir().toPath())
+                    .arguments(arguments)
+                    .stdOut(out)
+                    .stdErr(err)
+                    .build());
+            if (!result.success()) {
+                throw new MojoExecutionException("Error while executing JBang.\nstdout: " + out + "\nstderr:" + err);
+            } else {
+                getLog().info("JBang executed successfully");
+                getLog().info(out.toString());
+            }
+        } catch (IOException e) {
+            throw new MojoExecutionException(e.getMessage(), e);
         }
     }
-
-    private void download() throws MojoExecutionException {
-        String uri;
-        String homePath;
-        if (isLatestVersion()) {
-            uri = "https://www.jbang.dev/releases/latest/download/jbang.zip";
-            homePath = "jbang";
-        } else {
-            uri = String.format("https://github.com/jbangdev/jbang/releases/download/v%s/jbang-%s.zip",
-                                jbangVersion, jbangVersion);
-            homePath = "jbang-" + jbangVersion;
-        }
-        Path installDir = jbangInstallDir.toPath().resolve(".jbang").toAbsolutePath();
-        getLog().debug("Downloading JBang from " + uri + " and installing in " + installDir);
-        executeMojo(
-                plugin("com.googlecode.maven-download-plugin",
-                       "download-maven-plugin",
-                       "1.6.2"),
-                goal("wget"),
-                configuration(
-                        element("uri", uri),
-                        element("followRedirects", "true"),
-                        element("unpack", "true"),
-                        element("outputDirectory", installDir.toString())
-                ),
-                executionEnvironment(
-                        project,
-                        session,
-                        pluginManager));
-        jbangHome = installDir.resolve(homePath);
-    }
-
-    private boolean isLatestVersion() {
-        return Artifact.LATEST_VERSION.equals(jbangVersion);
-    }
-
-    private ProcessResult version() throws MojoExecutionException {
-        List<String> command = command();
-        command.add(findJBangExecutable() + " version");
-        ProcessResult result = null;
-        try {
-            result = new ProcessExecutor()
-                    .command(command)
-                    .readOutput(true)
-                    .destroyOnExit()
-                    .execute();
-        } catch (Exception e) {
-            throw new MojoExecutionException("Error while fetching the JBang version", e);
-        }
-        return result;
-    }
-
 
     /**
      * Execute "jbang trust add URL..."
@@ -181,83 +149,20 @@ public class RunMojo extends AbstractMojo {
      *                                0: success
      *                                1: Already trusted source(s)
      */
-    private void executeTrust() throws MojoExecutionException {
+    private void executeTrust(ToolHandle jbang) throws MojoExecutionException {
         if (trusts == null || trusts.length == 0) {
             // No trust required
             return;
         }
-        List<String> command = command();
-        command.add(findJBangExecutable() + " trust add " + String.join(" ", trusts));
-        ProcessResult result = execute(command);
-        int exitValue = result.getExitValue();
-        if (exitValue != 0 && exitValue != 1) {
-            throw new MojoExecutionException("Error while trusting JBang URLs. Exit code: " + result.getExitValue());
-        }
-    }
-
-    /**
-     * Execute jbang run script arguments
-     *
-     * @throws MojoExecutionException if exit value != 0
-     */
-    private void executeJBang() throws MojoExecutionException {
-        List<String> command = command();
-        StringBuilder executable = new StringBuilder(findJBangExecutable());
-        executable.append(" run ");
-        if (jbangargs != null) {
-            executable.append(" ").append(String.join(" ", jbangargs)).append(" ");
-        }
-        executable.append(script);
-        if (args != null) {
-            executable.append(" ").append(String.join(" ", args));
-        }
-        command.add(executable.toString());
-        ProcessResult result = execute(command);
-        if (result.getExitValue() != 0) {
-            throw new MojoExecutionException("Error while executing JBang. Exit code: " + result.getExitValue());
-        }
-    }
-
-    private ProcessResult execute(List<String> command) throws MojoExecutionException {
-        try {
-            return new ProcessExecutor()
-                    .command(command)
-                    .redirectOutput(Slf4jStream.ofCaller().asInfo())
-                    .destroyOnExit()
-                    .execute();
-        } catch (Exception e) {
-            throw new MojoExecutionException("Error while executing JBang", e);
-        }
-    }
-
-    /**
-     * @return the command containing the supported shell per OS
-     */
-    private List<String> command() {
-        List<String> command = new ArrayList<>();
-        if (IS_OS_WINDOWS) {
-            command.add("cmd.exe");
-            command.add("/c");
-        } else {
-            command.add("sh");
-            command.add("-c");
-        }
-        return command;
-    }
-
-    private String findJBangExecutable() {
-        if (jbangHome != null) {
-            if (IS_OS_WINDOWS) {
-                return jbangHome.resolve("bin/jbang.cmd").toString();
-            } else {
-                return jbangHome.resolve("bin/jbang").toString();
-            }
-        } else {
-            if (IS_OS_WINDOWS) {
-                return "jbang.cmd";
-            } else {
-                return "jbang";
-            }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        ToolHandle.Result result = jbang.execute(jbang.executionTemplate()
+                        .arguments(Stream.concat(Stream.of("trust", "add"), Arrays.stream(trusts)).collect(Collectors.toList()))
+                        .stdOut(out)
+                        .stdErr(err)
+                        .build());
+        if (!result.success()) {
+            throw new MojoExecutionException("Error while trusting JBang URLs.\nstdout: " + out + "\nstderr:" + err);
         }
     }
 }
