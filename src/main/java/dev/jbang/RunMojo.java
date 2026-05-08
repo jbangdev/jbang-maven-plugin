@@ -4,23 +4,22 @@ package dev.jbang;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.maveniverse.maven.toolrunner.shared.Config;
+import eu.maveniverse.maven.toolrunner.shared.ToolExecution;
 import eu.maveniverse.maven.toolrunner.shared.ToolHandle;
 import eu.maveniverse.maven.toolrunner.shared.ToolHandler;
 import eu.maveniverse.maven.toolrunner.shared.ToolManager;
 import eu.maveniverse.maven.toolrunner.tools.jbang.JBangProvider;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -123,19 +122,18 @@ public class RunMojo extends AbstractMojo {
             if (args != null) {
                 arguments.addAll(Arrays.asList(args));
             }
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-            ToolHandle.Result result = jbang.execute(jbang.executionTemplate()
+            ToolExecution.Builder execution = jbang.executionTemplate()
                     .cwd(project.getBasedir().toPath())
-                    .arguments(arguments)
-                    .stdOut(out)
-                    .stdErr(err)
-                    .build());
-            if (!result.success()) {
-                throw new MojoExecutionException("Error while executing JBang.\nstdout: " + out + "\nstderr:" + err);
+                    .arguments(arguments);
+            ToolHandle.Result result = jbang.execute(execution.build());
+            // we know JBangProvider uses ProcessBuilderExecutor so we insist on exitCode
+            int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("Missing exitCode"));
+            if (exitCode != 0) {
+                throw new MojoExecutionException("Error while executing JBang.\nstdout: "
+                        + result.stdOutString().orElse("") + "\nstderr:" + result.stdErrString().orElse(""));
             } else {
                 getLog().info("JBang executed successfully");
-                getLog().info(out.toString());
+                getLog().info(result.stdOutString().orElse(""));
             }
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
@@ -154,15 +152,14 @@ public class RunMojo extends AbstractMojo {
             // No trust required
             return;
         }
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
         ToolHandle.Result result = jbang.execute(jbang.executionTemplate()
                         .arguments(Stream.concat(Stream.of("trust", "add"), Arrays.stream(trusts)).collect(Collectors.toList()))
-                        .stdOut(out)
-                        .stdErr(err)
                         .build());
-        if (!result.success()) {
-            throw new MojoExecutionException("Error while trusting JBang URLs.\nstdout: " + out + "\nstderr:" + err);
+        // we know JBangProvider uses ProcessBuilderExecutor so we insist on exitCode
+        int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("Missing exitCode"));
+        if (exitCode != 0 && exitCode != 1) {
+            throw new MojoExecutionException("Error while trusting JBang URLs.\nstdout: "
+                    + result.stdOutString().orElse("") + "\nstderr:" + result.stdErrString().orElse(""));
         }
     }
 }
