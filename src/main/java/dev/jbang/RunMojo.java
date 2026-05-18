@@ -4,6 +4,7 @@ package dev.jbang;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,12 +21,15 @@ import eu.maveniverse.maven.toolrunner.shared.ToolHandler;
 import eu.maveniverse.maven.toolrunner.shared.ToolManager;
 import eu.maveniverse.maven.toolrunner.tools.jbang.JBangProvider;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+
+import javax.inject.Inject;
 
 /**
  * Run JBang with the specified parameters
@@ -81,8 +85,8 @@ public class RunMojo extends AbstractMojo {
     /**
      * Used for basedir -> CWD
      */
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    protected MavenProject project;
+    @Inject
+    protected MavenSession mavenSession;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -90,12 +94,19 @@ public class RunMojo extends AbstractMojo {
             getLog().info("Skipping plugin execution");
             return;
         }
+        Path tempDir = null; // use default
+        Path cwd = Paths.get(mavenSession.getExecutionRootDirectory());
+        if (mavenSession.getCurrentProject().getBasedir() != null) {
+            Path output = Paths.get(mavenSession.getCurrentProject().getBuild().getOutputDirectory());
+            tempDir = output.resolve("toolrunner-tmp");
+            cwd = mavenSession.getCurrentProject().getBasedir().toPath();
+        }
         try (ToolManager toolManager = ToolManager.create(
                 Config.builder()
                         .isTransient(false)
                         .allowPathDetection(true)
-                        .tempDirectory(Paths.get(project.getBuild().getOutputDirectory()).resolve("toolrunner-tmp"))
-                        .installationDirectory(jbangInstallDir.toPath())
+                        .tempDirectory(tempDir)
+                        .installationDirectory(jbangInstallDir != null ? jbangInstallDir.toPath() : null)
                         .build())) {
             ToolHandler toolHandler = toolManager.selectToolByName("jbang")
                     .orElseThrow(() -> new IllegalStateException("ToolHandler not found")); // never happens
@@ -123,7 +134,7 @@ public class RunMojo extends AbstractMojo {
                 arguments.addAll(Arrays.asList(args));
             }
             ToolExecution.Builder execution = jbang.executionTemplate()
-                    .cwd(project.getBasedir().toPath())
+                    .cwd(cwd)
                     .arguments(arguments);
             ToolHandle.Result result = jbang.execute(execution.build());
             // we know JBangProvider uses ProcessBuilderExecutor so we insist on exitCode
