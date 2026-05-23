@@ -1,7 +1,6 @@
 package dev.jbang;
 
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,7 +26,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 
 import javax.inject.Inject;
 
@@ -59,7 +57,7 @@ public class RunMojo extends AbstractMojo {
     /**
      * If the script is in a remote location, what URLs should be trusted
      *
-     * See https://github.com/jbangdev/jbang#urls-from-trusted-sources for more information
+     * See <a href="https://github.com/jbangdev/jbang#urls-from-trusted-sources">JBang URLs from trusted sources</a> for more information
      */
     @Parameter(property = "jbang.trusts")
     private String[] trusts;
