@@ -133,7 +133,7 @@ public class RunMojo extends AbstractMojo {
             if (args != null) {
                 arguments.addAll(Arrays.asList(args));
             }
-            ToolExecution.Builder execution = jbang.executionTemplate()
+            ToolExecution.Builder execution = ToolExecution.ofCommand("jbang")
                     .cwd(cwd)
                     .arguments(arguments);
             ToolHandle.Result result = jbang.execute(execution.build());
@@ -163,7 +163,7 @@ public class RunMojo extends AbstractMojo {
             // No trust required
             return;
         }
-        ToolHandle.Result result = jbang.execute(jbang.executionTemplate()
+        ToolHandle.Result result = jbang.execute(ToolExecution.ofCommand("jbang")
                         .arguments(Stream.concat(Stream.of("trust", "add"), Arrays.stream(trusts)).collect(Collectors.toList()))
                         .build());
         // we know JBangProvider uses ProcessBuilderExecutor so we insist on exitCode
